@@ -12,8 +12,8 @@ reviews:
     drafts: false
     # 作業ブランチ → develop、develop → main のどちらの PR もレビューする
     base_branches:
-      - develop
-      - main
+      - "^develop$"
+      - "^main$"
   path_filters:
     - "!pnpm-lock.yaml"
     - "!drizzle/meta/**"

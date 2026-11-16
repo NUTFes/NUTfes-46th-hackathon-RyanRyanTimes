@@ -8,6 +8,7 @@
 | `feat/...`・`fix/...`・`docs/...`・`chore/...` | 作業用。`develop` から切り、1つの機能・修正ごとに `develop` へ PR を出す |
 
 - `develop` から `main` へは、リリースするときに PR を出す
+- `main` と `develop` はブランチ保護で、PR を通さないと入れない（直接 push できない）。PR は CI が通らないとマージできない
 - PR はマージ後に作業ブランチが自動で消える
 - PR には CodeRabbit が日本語でレビューを付ける（`.coderabbit.yaml`）
 
@@ -15,15 +16,16 @@
 `develop`・`main` への PR と push で、型チェック・テスト・Cloudflare Workers 向けビルド（`pnpm build:worker`）を行う。
 
 ## CD（`.github/workflows/deploy.yml`）
-`main` への push（と手動実行）で本番にデプロイする。Cloudflare の準備ができるまでは動かない。
+`main` への push（と `main` を選んだ手動実行）で本番にデプロイする。Cloudflare の準備ができるまでは動かない。デプロイの中でもテスト・ビルド・型チェックを通し、落ちたら配備しない。
 
 ### 本番デプロイの準備
 1. Cloudflare で D1 データベースと R2 バケットを作る
 2. GitHub のリポジトリ設定で、次を登録する
    - Secrets：`CLOUDFLARE_API_TOKEN`（Workers・D1・R2 の編集権限）、`CLOUDFLARE_ACCOUNT_ID`
-   - Variables：`D1_DATABASE_NAME`、`D1_DATABASE_ID`、`R2_BUCKET_NAME`、`CF_DEPLOY_ENABLED=true`
-   - Environment：`production`（必要なら承認者を設定）
-3. アプリの秘密の値は、一度だけ手で Worker に登録する（`pnpm exec wrangler secret put <名前>`）。対象は README の環境変数一覧を参照（`SESSION_SECRET`、`SLACK_CLIENT_SECRET`、`GEMINI_API_KEY` など）
+   - Variables（リポジトリ変数。Environment 側に置くと動かない）：`D1_DATABASE_NAME`、`D1_DATABASE_ID`、`R2_BUCKET_NAME`、`CF_DEPLOY_ENABLED=true`
+   - Environment：`production` を作り、「Deployment branches」を `main` だけにする（必要なら承認者も設定）
+3. アプリの環境変数は、秘密かどうかにかかわらず、一度だけ手で Worker に secret として登録する（`pnpm exec wrangler secret put <名前>`）。ダッシュボードの平文の変数は、デプロイのたびに wrangler の設定で上書きされて消えるため使わない
+   - 対象：`SESSION_SECRET`、`SLACK_CLIENT_ID`、`SLACK_CLIENT_SECRET`、`SLACK_TEAM_ID`、`APP_BASE_URL`（`GEMINI_API_KEY`・`GITHUB_TOKEN` は Worker には不要。手元で `pnpm monthly` などを動かすときの環境変数）
 4. Slack アプリのリダイレクト URL に、本番の `https://<ドメイン>/api/auth/slack/callback` を登録する
 
 ### デプロイで行うこと

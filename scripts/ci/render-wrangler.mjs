@@ -13,7 +13,7 @@ if (missing.length > 0) {
   console.error(`環境変数が足りません: ${missing.join(", ")}`);
   process.exit(1);
 }
-if (!/^[0-9a-f-]{36}$/i.test(process.env.D1_DATABASE_ID) || process.env.D1_DATABASE_ID === PLACEHOLDER_DB_ID) {
+if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(process.env.D1_DATABASE_ID) || process.env.D1_DATABASE_ID === PLACEHOLDER_DB_ID) {
   console.error("D1_DATABASE_ID が本番の UUID ではありません");
   process.exit(1);
 }
@@ -26,10 +26,17 @@ if (files.length === 0) {
 
 for (const file of files) {
   const before = readFileSync(file, "utf8");
+  // 置き換える対象が設定ファイルに本当にあるかを先に確かめる（名前が変わっていたら止める）
+  for (const expected of [PLACEHOLDER_DB_ID, `"${LOCAL_DB_NAME}"`, `"${LOCAL_BUCKET}"`]) {
+    if (!before.includes(expected)) {
+      console.error(`${file}: 置き換え対象 ${expected} が見つかりません。scripts/ci/render-wrangler.mjs の値を設定ファイルに合わせてください`);
+      process.exit(1);
+    }
+  }
   const after = before
-    .replaceAll(PLACEHOLDER_DB_ID, process.env.D1_DATABASE_ID)
-    .replaceAll(`"${LOCAL_DB_NAME}"`, JSON.stringify(process.env.D1_DATABASE_NAME))
-    .replaceAll(`"${LOCAL_BUCKET}"`, JSON.stringify(process.env.R2_BUCKET_NAME));
+    .replaceAll(PLACEHOLDER_DB_ID, () => process.env.D1_DATABASE_ID)
+    .replaceAll(`"${LOCAL_DB_NAME}"`, () => JSON.stringify(process.env.D1_DATABASE_NAME))
+    .replaceAll(`"${LOCAL_BUCKET}"`, () => JSON.stringify(process.env.R2_BUCKET_NAME));
   if (after.includes(PLACEHOLDER_DB_ID) || after.includes(`"${LOCAL_DB_NAME}"`) || after.includes(`"${LOCAL_BUCKET}"`)) {
     console.error(`${file}: 開発用の値が残っています`);
     process.exit(1);
