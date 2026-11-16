@@ -1,11 +1,12 @@
+import { validateTip } from "./tip-validation";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { lintDraft } from "./pipeline/drafts";
 import { invalidatePublicCache, validIssuePath } from "./reader";
 
 // D1 の JSON 列は境界で復元し、更新を同一オリジンと権限で保護する。
 export type Row = Record<string, any>;
-export class WorkflowError extends Error { constructor(public status: number, public code: string, message: string) { super(message); } }
-export function check(ok: unknown, message = "入力内容を確認してください。", status = 400, code = "validation_error"): asserts ok { if (!ok) throw new WorkflowError(status, code, message); }
+export class WorkflowError extends Error { constructor(public status: number, public code: string, message: string, public field?: string) { super(message); } }
+export function check(ok: unknown, message = "入力内容を確認してください。", status = 400, code = "validation_error", field?: string): asserts ok { if (!ok) throw new WorkflowError(status, code, message, field); }
 export function transition(status: string, allowed: string[]) { check(allowed.includes(status), "この状態では操作できません。", 409, "invalid_state_transition"); }
 const jsonFields = ["links", "metrics", "seed_ids", "tip_ids", "lint_warnings", "firsts"];
 export function decode(row: Row): Row { for (const k of jsonFields) if (typeof row[k] === "string") row[k] = JSON.parse(row[k]); return row; }
@@ -31,7 +32,7 @@ export async function workflow(path: string[], method: string, b: Row, query: UR
     if (method === "PATCH") { check(!actor.opted_out_at,"記事の対象に戻ってから変更してください。"); const login = github(b.github_login); await run("UPDATE members SET github_login=?,updated_at=? WHERE id=?",[login,now,actor.id]); return {ok:true}; }
     if (key === "articles" && path[3] === "retract") {
       check(b.confirm === true,"取り下げると元に戻せません。確認してください。");
-      const a = await one("SELECT * FROM articles WHERE slug=? AND member_id=?",[action,actor.id]); transition(a.status,["published"]);
+      const a = await one("SELECT * FROM articles WHERE slug=? AND member_id=?",[action,actor.id]); check(a.status==="published","公開中の記事だけ取り下げられます。",409,"invalid_state_transition");
       await run("UPDATE articles SET status='retracted',retracted_at=?,updated_at=? WHERE id=? AND status='published'",[now,now,a.id]); invalidatePublicCache(); return {ok:true};
     }
     if (key === "opt-in") { check(actor.opted_out_at,"すでに記事の対象です。",409,"invalid_state_transition"); await run("UPDATE members SET opted_out_at=NULL,display_name=?,updated_at=? WHERE id=?",[actor.slack_user_id,now,actor.id]); return {ok:true}; }
@@ -65,16 +66,24 @@ export async function workflow(path: string[], method: string, b: Row, query: UR
     if (method === "GET" && editor) return all("SELECT t.*,s.display_name AS sender_name,m.display_name AS target_name FROM tips t JOIN members s ON s.id=t.sender_member_id JOIN members m ON m.id=t.target_member_id WHERE (?='' OR t.status=?) ORDER BY t.created_at DESC",[query.get("status") ?? "",query.get("status") ?? ""]);
     if (!key && method === "POST" && !editor) {
       check(!actor.opted_out_at,"記事の対象に戻ってから送信してください。");
-      check(typeof b.body === "string" && b.body.trim() && [...b.body].length<=1000); check(Array.isArray(b.links) && b.links.length<=3 && b.links.every(validLink)); check(typeof b.is_anonymous === "boolean");
-      await one("SELECT id FROM members WHERE id=? AND id<>? AND opted_out_at IS NULL AND is_active=1",[b.target_member_id,actor.id]);
+      const validated = validateTip(b);
+      check(!validated.error, validated.error?.message, 400, "validation_error", validated.error?.field);
+      const target = (await all("SELECT id,opted_out_at,is_active FROM members WHERE id=?",[b.target_member_id]))[0];
+      check(target, "誰のいい話かを選んでください。", 400, "validation_error", "target_member_id");
+      check(target.id !== actor.id && !target.opted_out_at && target.is_active, "誰のいい話かを選んでください。", 400, "validation_error", "target_member_id");
+      b.links = validated.links;
       const tipId=id();
-      await run("INSERT INTO tips (id,target_member_id,sender_member_id,is_anonymous,body,links,status,created_at) SELECT ?,?,?,?,?,?,'received',? WHERE (SELECT COUNT(*) FROM tips WHERE sender_member_id=? AND date(created_at,'+9 hours')=date(?,'+9 hours'))<20",[tipId,b.target_member_id,actor.id,Number(b.is_anonymous),b.body.trim(),JSON.stringify(b.links),now,actor.id,now]);
-      check((await all("SELECT id FROM tips WHERE id=?",[tipId])).length,"1日20件までです。",429,"rate_limited"); return {id:tipId};
+      await run("INSERT INTO tips (id,target_member_id,sender_member_id,is_anonymous,body,links,status,created_at) SELECT ?,?,?,?,?,?,'received',? WHERE EXISTS(SELECT 1 FROM members WHERE id=? AND opted_out_at IS NULL AND is_active=1 AND id<>?) AND (SELECT COUNT(*) FROM tips WHERE sender_member_id=? AND date(created_at,'+9 hours')=date(?,'+9 hours'))<20",[tipId,b.target_member_id,actor.id,Number(b.is_anonymous),b.body.trim(),JSON.stringify(b.links),now,b.target_member_id,actor.id,actor.id,now]);
+      if (!(await all("SELECT id FROM tips WHERE id=?",[tipId])).length) {
+        check((await all("SELECT id FROM members WHERE id=? AND opted_out_at IS NULL AND is_active=1 AND id<>?",[b.target_member_id,actor.id])).length,"誰のいい話かを選んでください。",400,"validation_error","target_member_id");
+        check(false,"1日20件までです。",429,"rate_limited");
+      }
+      return {id:tipId};
     }
     const t=await one("SELECT * FROM tips WHERE id=?",[key]);
     if (!editor) check(t.sender_member_id===actor.id && action==="withdraw","操作できません。",403,"forbidden");
     const states: Row={adopt:["received","adopted"],decline:["received","declined"],reopen:["declined","received"],withdraw:["received","withdrawn"]};
-    check(states[action] && (editor ? action!=="withdraw" : action==="withdraw")); transition(t.status,[states[action][0]]);
+    check(states[action] && (editor ? action!=="withdraw" : action==="withdraw"),"このタレコミは取り消せません。"); check(t.status===states[action][0], action==="withdraw"?"受付中のタレコミだけ取り消せます。":"この状態では操作できません。",409,"invalid_state_transition");
     const ops=[stmt("UPDATE tips SET status=?,decided_by=?,decided_at=? WHERE id=? AND status=?",[states[action][1],editor?actor.id:null,now,key,t.status])];
     if(action==="adopt") { const sid=`tip-seed:${key}`; ops.push(stmt("INSERT OR IGNORE INTO seeds (id,member_id,month,kind,score,summary,metrics,created_at) VALUES (?,?,?,'K-12',1010,'仲間から推薦された','{}',?)",[sid,t.target_member_id,t.created_at.slice(0,7),now])); ops.push(stmt("INSERT OR IGNORE INTO evidences (id,seed_id,tip_id,source,author_member_id,excerpt,occurred_at) VALUES (?,?,?,'tip',?,?,?)",[`tip-evidence:${key}`,sid,key,t.sender_member_id,t.body.slice(0,200),t.created_at])); }
     await db.batch(ops); return {ok:true};
@@ -123,4 +132,3 @@ export async function workflow(path: string[], method: string, b: Row, query: UR
 }
 function github(v: unknown) { check(v===null || v==="" || (typeof v==="string" && /^(?!-)[a-zA-Z0-9-]{1,39}(?<!-)$/.test(v)),"GitHub アカウントを確認してください。"); return v?String(v).toLowerCase():null; }
 
-function validLink(value:unknown) { if(typeof value!=="string" || value.length>2048) return false; try {const url=new URL(value);return ["http:","https:"].includes(url.protocol)&&!!url.hostname;}catch{return false;} }
