@@ -1,0 +1,183 @@
+[
+  {
+    "id": "fixture:commit:0",
+    "kind": "commit",
+    "actor": "fixture-user-1",
+    "occurred_at": "2026-11-02T04:00:00Z",
+    "repository": "fictional/example",
+    "text": "架空の開発活動",
+    "files": [
+      "docs/guide.md"
+    ]
+  },
+  {
+    "id": "fixture:commit:1",
+    "kind": "commit",
+    "actor": "fixture-user-1",
+    "occurred_at": "2026-11-03T04:00:00Z",
+    "repository": "fictional/example",
+    "text": "架空の開発活動",
+    "files": [
+      "src/example.ts"
+    ]
+  },
+  {
+    "id": "fixture:commit:2",
+    "kind": "commit",
+    "actor": "fixture-user-1",
+    "occurred_at": "2026-11-04T04:00:00Z",
+    "repository": "fictional/example",
+    "text": "架空の開発活動",
+    "files": [
+      "src/example.ts"
+    ]
+  },
+  {
+    "id": "fixture:commit:3",
+    "kind": "commit",
+    "actor": "fixture-user-1",
+    "occurred_at": "2026-11-05T04:00:00Z",
+    "repository": "fictional/example",
+    "text": "架空の開発活動",
+    "files": [
+      "src/example.ts"
+    ]
+  },
+  {
+    "id": "fixture:commit:4",
+    "kind": "commit",
+    "actor": "fixture-user-1",
+    "occurred_at": "2026-11-06T04:00:00Z",
+    "repository": "fictional/example",
+    "text": "架空の開発活動",
+    "files": [
+      "src/example.ts"
+    ]
+  },
+  {
+    "id": "fixture:commit:5",
+    "kind": "commit",
+    "actor": "fixture-user-1",
+    "occurred_at": "2026-11-07T04:00:00Z",
+    "repository": "fictional/example",
+    "text": "架空の開発活動",
+    "files": [
+      "src/example.ts"
+    ]
+  },
+  {
+    "id": "fixture:review:0",
+    "kind": "review",
+    "actor": "fixture-user-1",
+    "occurred_at": "2026-11-02T04:00:00Z",
+    "repository": "fictional/example",
+    "text": "架空の開発活動",
+    "target_author": "fixture-user-2"
+  },
+  {
+    "id": "fixture:review:1",
+    "kind": "review",
+    "actor": "fixture-user-1",
+    "occurred_at": "2026-11-03T04:00:00Z",
+    "repository": "fictional/example",
+    "text": "架空の開発活動",
+    "target_author": "fixture-user-2"
+  },
+  {
+    "id": "fixture:review:2",
+    "kind": "review",
+    "actor": "fixture-user-1",
+    "occurred_at": "2026-11-04T04:00:00Z",
+    "repository": "fictional/example",
+    "text": "架空の開発活動",
+    "target_author": "fixture-user-2"
+  },
+  {
+    "id": "fixture:review:3",
+    "kind": "review",
+    "actor": "fixture-user-1",
+    "occurred_at": "2026-11-05T04:00:00Z",
+    "repository": "fictional/example",
+    "text": "架空の開発活動",
+    "target_author": "fixture-user-2"
+  },
+  {
+    "id": "fixture:review:4",
+    "kind": "review",
+    "actor": "fixture-user-1",
+    "occurred_at": "2026-11-06T04:00:00Z",
+    "repository": "fictional/example",
+    "text": "架空の開発活動",
+    "target_author": "fixture-user-2"
+  },
+  {
+    "id": "fixture:review_comment:0",
+    "kind": "review_comment",
+    "actor": "fixture-user-1",
+    "occurred_at": "2026-11-02T04:00:00Z",
+    "repository": "fictional/example",
+    "text": "架空の開発活動",
+    "target_author": "fixture-user-2"
+  },
+  {
+    "id": "fixture:issue_opened:0",
+    "kind": "issue_opened",
+    "actor": "fixture-user-1",
+    "occurred_at": "2026-11-02T04:00:00Z",
+    "repository": "fictional/example",
+    "text": "架空の開発活動"
+  },
+  {
+    "id": "fixture:issue_opened:1",
+    "kind": "issue_opened",
+    "actor": "fixture-user-1",
+    "occurred_at": "2026-11-03T04:00:00Z",
+    "repository": "fictional/example",
+    "text": "架空の開発活動"
+  },
+  {
+    "id": "fixture:issue_opened:2",
+    "kind": "issue_opened",
+    "actor": "fixture-user-1",
+    "occurred_at": "2026-11-04T04:00:00Z",
+    "repository": "fictional/example",
+    "text": "架空の開発活動"
+  },
+  {
+    "id": "fixture:pr_opened:0",
+    "kind": "pr_opened",
+    "actor": "fixture-user-1",
+    "occurred_at": "2026-11-02T04:00:00Z",
+    "repository": "fictional/example",
+    "text": "架空の開発活動",
+    "files": [
+      "README.md"
+    ]
+  },
+  {
+    "id": "fixture:pr_merged:0",
+    "kind": "pr_merged",
+    "actor": "fixture-user-1",
+    "occurred_at": "2026-11-02T04:00:00Z",
+    "repository": "fictional/example",
+    "text": "架空の開発活動"
+  },
+  {
+    "id": "fixture:commit:20",
+    "kind": "commit",
+    "actor": "fixture-bot[bot]",
+    "occurred_at": "2026-11-22T04:00:00Z",
+    "repository": "fictional/example",
+    "text": "架空の開発活動",
+    "is_bot": true
+  },
+  {
+    "id": "fixture:review:21",
+    "kind": "review",
+    "actor": "fixture-user-1",
+    "occurred_at": "2026-11-23T04:00:00Z",
+    "repository": "fictional/example",
+    "text": "架空の開発活動",
+    "target_author": "fixture-user-1"
+  }
+]

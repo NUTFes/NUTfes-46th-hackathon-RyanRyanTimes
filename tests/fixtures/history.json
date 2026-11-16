@@ -1,0 +1,29 @@
+[
+  {
+    "member_id": "fixture-member-1",
+    "month": "2026-10",
+    "commits": 2,
+    "prs_opened": 0,
+    "prs_merged": 0,
+    "reviews": 0,
+    "review_comments": 0,
+    "issues_opened": 0,
+    "doc_changes": 0,
+    "posts": 0,
+    "thread_replies": 0,
+    "question_replies": 0,
+    "reactions_given": 0,
+    "reactions_given_people": 0,
+    "reactions_received": 0,
+    "thanks_received": 0,
+    "first_greetings": 0,
+    "active_weeks": 1,
+    "weeks_in_month": 5,
+    "peak_hour": 12,
+    "top_emoji": null,
+    "firsts": [
+      "metric:commits",
+      "repository:fictional/previous"
+    ]
+  }
+]

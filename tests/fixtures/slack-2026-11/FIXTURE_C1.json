@@ -1,0 +1,511 @@
+{
+  "ok": true,
+  "messages": [
+    {
+      "user": "FIXTURE_U1",
+      "ts": "1793502000.000000",
+      "text": "架空の活動記録を共有した。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1",
+            "FIXTURE_U2",
+            "FIXTURE_U3",
+            "FIXTURE_U4",
+            "FIXTURE_U5",
+            "FIXTURE_U6",
+            "FIXTURE_U7",
+            "FIXTURE_U8"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U1",
+      "ts": "1793588400.000000",
+      "text": "架空の活動記録を共有した。"
+    },
+    {
+      "user": "FIXTURE_U1",
+      "ts": "1794193200.000000",
+      "text": "架空の活動記録を共有した。"
+    },
+    {
+      "user": "FIXTURE_U1",
+      "ts": "1794798000.000000",
+      "text": "架空の活動記録を共有した。"
+    },
+    {
+      "user": "FIXTURE_U1",
+      "ts": "1795402800.000000",
+      "text": "架空の活動記録を共有した。"
+    },
+    {
+      "user": "FIXTURE_U1",
+      "ts": "1796007600.000000",
+      "text": "架空の活動記録を共有した。"
+    },
+    {
+      "user": "FIXTURE_U2",
+      "ts": "1793674800.000000",
+      "text": "架空の手順を教えて？",
+      "replies": [
+        {
+          "user": "FIXTURE_U1",
+          "ts": "1793674860.000000",
+          "text": "架空の手順はこちらです。"
+        },
+        {
+          "user": "FIXTURE_U2",
+          "ts": "1793674920.000000",
+          "text": "ありがとう、助かる！"
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U2",
+      "ts": "1793761200.000000",
+      "text": "架空の手順を教えて？",
+      "replies": [
+        {
+          "user": "FIXTURE_U1",
+          "ts": "1793761260.000000",
+          "text": "架空の手順はこちらです。"
+        },
+        {
+          "user": "FIXTURE_U2",
+          "ts": "1793761320.000000",
+          "text": "ありがとう、助かる！"
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U2",
+      "ts": "1793847600.000000",
+      "text": "架空の手順を教えて？",
+      "replies": [
+        {
+          "user": "FIXTURE_U1",
+          "ts": "1793847660.000000",
+          "text": "架空の手順はこちらです。"
+        },
+        {
+          "user": "FIXTURE_U2",
+          "ts": "1793847720.000000",
+          "text": "ありがとう、助かる！"
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U2",
+      "ts": "1794276000.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "pray",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U2",
+      "ts": "1794362400.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U2",
+      "ts": "1794448800.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U2",
+      "ts": "1794535200.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U2",
+      "ts": "1794621600.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U2",
+      "ts": "1794708000.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U3",
+      "ts": "1794279600.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "pray",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U3",
+      "ts": "1794366000.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U3",
+      "ts": "1794452400.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U3",
+      "ts": "1794538800.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U3",
+      "ts": "1794625200.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U3",
+      "ts": "1794711600.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U4",
+      "ts": "1794283200.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "pray",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U4",
+      "ts": "1794369600.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U4",
+      "ts": "1794456000.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U4",
+      "ts": "1794542400.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U4",
+      "ts": "1794628800.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U4",
+      "ts": "1794715200.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U5",
+      "ts": "1794286800.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "pray",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U5",
+      "ts": "1794373200.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U5",
+      "ts": "1794459600.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U5",
+      "ts": "1794546000.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U5",
+      "ts": "1794632400.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U5",
+      "ts": "1794718800.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U6",
+      "ts": "1794290400.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "pray",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U6",
+      "ts": "1794376800.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U6",
+      "ts": "1794463200.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U6",
+      "ts": "1794549600.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U6",
+      "ts": "1794636000.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U6",
+      "ts": "1794722400.000000",
+      "text": "架空の共有メモ。",
+      "reactions": [
+        {
+          "name": "heart",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U7",
+      "ts": "1795136400.000000",
+      "text": "除外対象の投稿",
+      "reactions": [
+        {
+          "name": "pray",
+          "users": [
+            "FIXTURE_U1"
+          ]
+        }
+      ]
+    },
+    {
+      "user": "FIXTURE_U8",
+      "bot_id": "FIXTURE_BOT",
+      "subtype": "bot_message",
+      "ts": "1795140000.000000",
+      "text": "ボットの投稿"
+    }
+  ]
+}

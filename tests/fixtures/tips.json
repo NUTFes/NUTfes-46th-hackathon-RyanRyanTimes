@@ -1,0 +1,14 @@
+[
+  {
+    "id": "fixture-tip-1",
+    "target_member_id": "fixture-member-1",
+    "sender_member_id": "fixture-member-3",
+    "is_anonymous": true,
+    "body": "架空の資料を読みやすくまとめてくれた。",
+    "links": [],
+    "status": "adopted",
+    "decided_by": null,
+    "created_at": "2026-11-15T00:00:00Z",
+    "decided_at": "2026-11-16T00:00:00Z"
+  }
+]

@@ -1,6 +1,6 @@
 # 良良タイムズ
 
-作業票02の土台と読者向け画面。Next.js App Router / strict TypeScript / Tailwind / Drizzle / Cloudflare D1・R2 を使用します。人物・記事・リンクはすべて架空です。既存の `app-web/` とは独立しています。
+作業票02の土台・読者向け画面と、作業票03の月次集計・下書きスクリプト。Next.js App Router / strict TypeScript / Tailwind / Drizzle / Cloudflare D1・R2 を使用します。サンプルの人物・記事・リンクはすべて架空です。既存の `app-web/` とは独立しています。
 
 ## ローカルで始める
 
@@ -27,7 +27,10 @@ pnpm dev
 | `APP_ENV` | ローカルは `local`、Workerは `production` |
 | `SESSION_SECRET` | セッション Cookie の HMAC-SHA256 署名用。32文字以上 |
 | `SLACK_CLIENT_ID` / `SLACK_CLIENT_SECRET` | 将来の Slack OIDC 用。現段階では不要 |
-| `GEMINI_API_KEY` | 将来の下書き生成スクリプト用。現段階では不要 |
+| `GITHUB_TOKEN` | GitHub 読み取り用。`--fixture` 使用時は不要 |
+| `GITHUB_ORG` | 取得対象の組織。既定値 `NUTFes` |
+| `GEMINI_API_KEY` | 下書き生成用。未設定なら通信せず決定的なテンプレートで生成 |
+| `GEMINI_MODEL` | Gemini のモデル名。既定値 `gemini-2.5-flash` |
 
 Slack OIDC の login / callback API は501を返します。開発用以外の「Slack でログイン」ボタンは無効です。`/tips/new` はログインが必要なプレースホルダーです。
 
@@ -35,7 +38,7 @@ Slack OIDC の login / callback API は501を返します。開発用以外の�
 
 `wrangler.jsonc` の D1 `DB` は `database_name=times-local`、`database_id=00000000-0000-0000-0000-000000000000` というプレースホルダーです。R2 `RAW` の `bucket_name=times-raw-placeholder` も仮名です。ローカル操作では実際のアカウントやリソース作成は不要です。
 
-D1/R2 のローカル状態は `times/.wrangler/state/v3/` に保存されます。`next dev` の OpenNext 開発初期化、Wrangler のマイグレーション、`getPlatformProxy` によるシードはこの状態を共有します。R2 は現段階ではバインディングだけ用意し、生データの取り込みは行いません。
+D1/R2 のローカル状態は `times/.wrangler/state/v3/` に保存されます。`next dev` の OpenNext 開発初期化、Wrangler のマイグレーション、`getPlatformProxy` によるシード・月次スクリプトはこの状態を共有します。R2 の生データは `raw/slack/<YYYY-MM>/<channel_id>.json`、`raw/slack/<YYYY-MM>/_channels.json`、`raw/github/<YYYY-MM>.json` に保存します。
 
 ```powershell
 pnpm db:generate
@@ -70,6 +73,73 @@ pnpm typecheck
 ```
 
 Vitest で公開状態の判定、署名の改ざん・期限切れ、Cookie属性、リダイレクトの制限、開発ログインの本番拒否、権限による401/403を確認します。
+
+## 月次パイプライン
+
+`times/` で実行します。D1 のマイグレーションが前提です。各スクリプトは `tsx` と Wrangler `getPlatformProxy` を使い、既定でローカル D1/R2 に書き込みます。`--remote` は予約済みとして明示的に拒否します。
+
+```powershell
+pnpm db:migrate:local
+# 全14種を確認するための架空名簿・GitHub紐付け・前月集計・匿名採用タレコミ（任意）
+pnpm pipeline:fixtures
+pnpm import:slack 2026-11 tests/fixtures/slack-2026-11
+pnpm import:github 2026-11 --fixture tests/fixtures/github-2026-11.json
+pnpm members:sync
+pnpm aggregate 2026-11
+pnpm seeds 2026-11
+pnpm drafts 2026-11
+# pipeline:fixtures を使った場合の保存内容の検証
+pnpm pipeline:verify
+```
+
+API キーは不要です。`pipeline:fixtures` を省略しても Slack から名簿・種・下書きを作れますが、GitHub の集計には本人または編集部による `github_login` の紐付けが必要です。Slack の名前から GitHub アカウントを推測して紐付けることはありません。サンプルのボット・オプトアウトを含む全条件の確認には `pipeline:fixtures` を先に実行します。
+
+```powershell
+# Slack取り込み後、GitHub取り込みから下書きまでを順に実行（オフライン）
+pnpm monthly 2026-11 --fixture tests/fixtures/github-2026-11.json
+# 編集画面などが登録した pending の再生成依頼を処理
+pnpm drafts:regenerate
+# 取り込みから1年を過ぎた生データと取り込み記録を削除
+pnpm cleanup
+```
+
+実 API を使う場合の `GITHUB_TOKEN`・`GITHUB_ORG`・`GEMINI_API_KEY`・`GEMINI_MODEL` は、スクリプトのプロセス環境変数として設定します（Next.js の `.env.local` は自動読込しません）。`import:github` と `monthly` は `--fixture` を省略すると GitHub API を呼ぶため、オフライン検証では必ず指定してください。Octokit のページ取得とレート制限・一時障害の再試行を使用します。コミットの変更ファイル、当月に開いたPR・マージされたPR、以前に開いたPRへの当月レビュー・レビューコメント、当月に開いたIssueを保存します。
+
+Gemini には主役・添える種、根拠最大5件、採用タレコミ、表示名、新入生判定、味付けを渡します。匿名タレコミの送り主と深夜の時刻は渡しません。JSON と字数を検証し、初回失敗後に最大3回再試行します。すべて失敗したら候補を残し、記事を新規作成しません。再生成は下書き状態だけを対象にし、依頼を completed / failed に更新します。テンプレート生成も見出し25字・本文200〜400字・記者コメント80字の制約と表現チェックを通します。下書きは自動公開しません。
+
+取り込みは同じ R2 キーの記録を更新し、集計は局員と月の組で upsert します。種と根拠には安定したIDを使い、既存記事を通常の `drafts` で上書きしません。記事に添えた根拠は再実行や raw の期限切れ後にも残します。オプトアウト行を名簿同期で復元せず、手動で設定した参加日も維持します。
+
+### Slack JSON の形式
+
+`_channels.json` は次の形です。公開チャンネルだけを指定し、チャンネルごとの `<id>.json` をすべて用意します。`users` と `workspace_url` は任意です。表示名がない人は Slack ID で追加します。
+
+```json
+{
+  "channels": [{ "id": "EXAMPLE_C1", "name": "架空の公開チャンネル" }],
+  "channel_joins": [{ "channel_id": "EXAMPLE_C1", "user": "EXAMPLE_U1", "ts": "1775000000.000000" }],
+  "users": [{ "id": "EXAMPLE_U1", "display_name": "架空の局員", "is_bot": false }],
+  "workspace_url": "https://example.slack.com"
+}
+```
+
+各チャンネルJSONは `conversations.history` 型の `messages` 配列です。全ページをまとめてから取り込みます。返信は `thread_ts` を持つ完全な投稿として配列に並べるか、親の `replies` に本文付きで入れます。Slack標準の `replies` の ID・時刻だけの要約は受け付けません。リアクションは `name` と `users` を使い、`count` ではなく除外後の実ユーザー数を数えます。`workspace_url` がある場合はパーマリンクを生成します。
+
+JST で月を区切り、月曜始まりの端数週も全週に含めます。リアクション日時がない標準 history は、投稿月のスナップショットとして数えます。そのリアクションは活動週と最初の歓迎の時系列判定には使いません。日時が分かる場合は任意の `timestamps: { "ユーザーID": "Slack時刻" }` をリアクションに付けられます。「初挑戦」は保持されたrawと過去集計で観測できる範囲の初回で、取り込み以前の全履歴を保証しません。過去データは先に取り込み・集計してください。
+
+しきい値・基本点と加点は `src/lib/pipeline/seeds.ts`、質問・感謝の語は `aggregate.ts`、表現チェックとプロンプトは `drafts.ts` で調整できます。順位判定の同数は同じ扱いにし、ゼロ件は候補にしません。スコアは基本点（通常10、推薦1000）＋しきい値の超過割合（最大100）＋直近3号未掲載5点＋未掲載5点です。
+
+### 制限された Windows 実行環境
+
+OS のユーザー情報取得で `tsx` が `uv_os_get_passwd ENOMEM` になる環境だけ、次の任意プリロードを使えます。環境変数から一時ディレクトリ名用のユーザー情報を補います。Wrangler のログとレジストリも作業フォルダ内へ保存できます。アプリやユーザーの設定ファイルは変更しません。
+
+```powershell
+$env:NODE_OPTIONS='--require=./scripts/windows-userinfo.cjs'
+$env:XDG_CONFIG_HOME=(Join-Path (Get-Location).Path '.wrangler/xdg')
+$env:WRANGLER_LOG_PATH='.wrangler/logs'
+$env:WRANGLER_SEND_METRICS='false'
+```
+
+結合検証用に `pnpm pipeline:verify --prepare-maintenance` → `pnpm drafts:regenerate` → `pnpm cleanup` → `pnpm pipeline:verify --after-maintenance` と実行すると、架空の再生成依頼と期限切れrawの処理も確認できます。`scripts/create-pipeline-fixtures.mjs` はコミット済みJSONの再生成用です。
 
 ## Workers へのデプロイ（実行は別途）
 

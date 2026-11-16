@@ -1,0 +1,92 @@
+{
+  "channels": [
+    {
+      "id": "FIXTURE_C1",
+      "name": "架空の公開チャンネル"
+    }
+  ],
+  "channel_joins": [
+    {
+      "user": "FIXTURE_U1",
+      "ts": "1680307200.000000",
+      "channel_id": "FIXTURE_C1"
+    },
+    {
+      "user": "FIXTURE_U2",
+      "ts": "1775001600.000000",
+      "channel_id": "FIXTURE_C1"
+    },
+    {
+      "user": "FIXTURE_U3",
+      "ts": "1680307200.000000",
+      "channel_id": "FIXTURE_C1"
+    },
+    {
+      "user": "FIXTURE_U4",
+      "ts": "1680307200.000000",
+      "channel_id": "FIXTURE_C1"
+    },
+    {
+      "user": "FIXTURE_U5",
+      "ts": "1680307200.000000",
+      "channel_id": "FIXTURE_C1"
+    },
+    {
+      "user": "FIXTURE_U6",
+      "ts": "1680307200.000000",
+      "channel_id": "FIXTURE_C1"
+    },
+    {
+      "user": "FIXTURE_U7",
+      "ts": "1680307200.000000",
+      "channel_id": "FIXTURE_C1"
+    },
+    {
+      "user": "FIXTURE_U8",
+      "ts": "1680307200.000000",
+      "channel_id": "FIXTURE_C1"
+    }
+  ],
+  "users": [
+    {
+      "id": "FIXTURE_U1",
+      "display_name": "架空・局員1",
+      "is_bot": false
+    },
+    {
+      "id": "FIXTURE_U2",
+      "display_name": "架空・局員2",
+      "is_bot": false
+    },
+    {
+      "id": "FIXTURE_U3",
+      "display_name": "架空・局員3",
+      "is_bot": false
+    },
+    {
+      "id": "FIXTURE_U4",
+      "display_name": "架空・局員4",
+      "is_bot": false
+    },
+    {
+      "id": "FIXTURE_U5",
+      "display_name": "架空・局員5",
+      "is_bot": false
+    },
+    {
+      "id": "FIXTURE_U6",
+      "display_name": "架空・局員6",
+      "is_bot": false
+    },
+    {
+      "id": "FIXTURE_U7",
+      "display_name": "架空・局員7",
+      "is_bot": false
+    },
+    {
+      "id": "FIXTURE_U8",
+      "display_name": "架空・局員8",
+      "is_bot": true
+    }
+  ]
+}
