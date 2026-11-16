@@ -11,3 +11,10 @@ body{background:var(--paper-deep);font-family:var(--font-sans)}h1,h2,h3,.namepla
 
 .article-grid{gap:20px}.article-card:nth-child(n){background:var(--panda-white);border:2px solid var(--ink);border-radius:12px;padding:20px}.lead{background:var(--yellow);border:2px solid var(--ink);border-radius:12px;padding:24px}.section-title .stamp{font-size:13px}.export-masthead img{display:inline-block;vertical-align:middle}
 @media(max-width:460px){.lead{padding:18px}.article-card:nth-child(n){padding:18px}}
+
+/* Feedback stays near the action on every screen size. */
+.workspace-toast-region{position:fixed;z-index:100;bottom:24px;right:24px;max-width:min(420px,calc(100vw - 48px));pointer-events:none}
+.workspace-toast{background:var(--panda-white);color:var(--ink);border:2px solid var(--ink);border-radius:12px;box-shadow:4px 4px 0 var(--ink);padding:14px 20px;overflow-wrap:anywhere;font-size:14px}
+.panel [aria-invalid="true"]{border:2px solid var(--stamp-red)}
+.field-error{color:var(--stamp-red);font-size:13px;margin-top:-8px}
+@media(max-width:640px){.workspace-toast-region{left:50%;right:auto;transform:translateX(-50%);width:calc(100% - 48px);bottom:max(24px,env(safe-area-inset-bottom))}}
