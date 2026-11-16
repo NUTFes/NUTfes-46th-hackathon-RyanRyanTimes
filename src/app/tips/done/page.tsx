@@ -1,0 +1,2 @@
+import Link from "next/link";import {requireMember} from "@/lib/auth";import {Masthead} from "@/components/newspaper";
+export default async function Page(){await requireMember("/tips/done");return <><Masthead/><main id="main" className="login-panel"><div className="reporter"><img src="/ryanryan.svg" width="48" height="48" alt="良良記者"/><div className="bubble"><h1>良良記者</h1><p>教えてくれてありがとうだよ〜</p></div></div><Link className="button" href="/tips/new">もう1件送る</Link> <Link href="/me">マイページへ</Link></main></>;}

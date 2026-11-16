@@ -40,7 +40,7 @@ export const getArticle = cache(async (slug: string) => {
   const detail = await unstable_cache(async () => {
     const db = await getDb();
     const seedIds = [...new Set([row.main_seed_id, ...row.seed_ids])];
-    const summaries = await db.select({ summary: seeds.summary, metrics: seeds.metrics }).from(seeds).where(inArray(seeds.id, seedIds));
+    const summaries = await db.select({ kind: seeds.kind, summary: seeds.summary, metrics: seeds.metrics }).from(seeds).where(inArray(seeds.id, seedIds));
     return { summaries };
   }, ["article-evidence", slug, row.updated_at ?? row.published_at ?? ""], { tags: [publicTag], revalidate: 60 })();
   // 他人の記事でもオプトアウトした作者の投稿を直ちに外すため、根拠は毎回検証する。

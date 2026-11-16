@@ -6,6 +6,7 @@ if (process.env.NODE_ENV === "development") {
 }
 
 const config: NextConfig = {
+  distDir: process.env.TIMES_DIST_DIR ?? ".next",
   // 公開状態は毎回 D1 で確認し、キャッシュ済み本文が残ることを防ぐ。
   serverExternalPackages: ["@opennextjs/cloudflare"],
 };

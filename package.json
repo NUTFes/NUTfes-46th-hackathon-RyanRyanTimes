@@ -25,7 +25,8 @@
     "cleanup": "tsx scripts/pipeline.ts cleanup",
     "monthly": "tsx scripts/pipeline.ts monthly",
     "pipeline:fixtures": "tsx scripts/pipeline-fixtures.ts",
-    "pipeline:verify": "tsx scripts/verify-pipeline.ts"
+    "pipeline:verify": "tsx scripts/verify-pipeline.ts",
+    "smoke:dev": "tsx scripts/dev-smoke.ts"
   },
   "dependencies": {
     "@octokit/plugin-retry": "^8.1.1",

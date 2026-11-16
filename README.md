@@ -1,6 +1,6 @@
 # 良良タイムズ
 
-作業票02の土台・読者向け画面と、作業票03の月次集計・下書きスクリプト。Next.js App Router / strict TypeScript / Tailwind / Drizzle / Cloudflare D1・R2 を使用します。サンプルの人物・記事・リンクはすべて架空です。既存の `app-web/` とは独立しています。
+読者向け紙面、局員・編集部の画面、Slack OIDC、月次集計・下書きスクリプト。Next.js App Router / strict TypeScript / Tailwind / Drizzle / Cloudflare D1・R2 を使用します。サンプルの人物・記事・リンクはすべて架空です。既存の `app-web/` とは独立しています。
 
 ## ローカルで始める
 
@@ -26,13 +26,13 @@ pnpm dev
 | `DEV_LOGIN` | `1` のときのみ開発ログインを許可。Next.js開発サーバーかつ `APP_ENV=local` が必要。本番ビルドでは強制無効 |
 | `APP_ENV` | ローカルは `local`、Workerは `production` |
 | `SESSION_SECRET` | セッション Cookie の HMAC-SHA256 署名用。32文字以上 |
-| `SLACK_CLIENT_ID` / `SLACK_CLIENT_SECRET` | 将来の Slack OIDC 用。現段階では不要 |
+| `SLACK_CLIENT_ID` / `SLACK_CLIENT_SECRET` | Slack OIDC のクライアントID・秘密（開発ログインだけなら不要） |
 | `GITHUB_TOKEN` | GitHub 読み取り用。`--fixture` 使用時は不要 |
 | `GITHUB_ORG` | 取得対象の組織。既定値 `NUTFes` |
 | `GEMINI_API_KEY` | 下書き生成用。未設定なら通信せず決定的なテンプレートで生成 |
 | `GEMINI_MODEL` | Gemini のモデル名。既定値 `gemini-2.5-flash` |
 
-Slack OIDC の login / callback API は501を返します。開発用以外の「Slack でログイン」ボタンは無効です。`/tips/new` はログインが必要なプレースホルダーです。
+Slack ログインは `/api/auth/slack/login` から開始し、署名付き state・nonce・Slack JWKS による id_token の検証後、許可されたワークスペースの局員だけをログインさせます。
 
 ## D1 と R2
 
@@ -60,9 +60,9 @@ pnpm db:seed
 
 `GET /api/issues`、`GET /api/issues/{kind}/{target}`、`GET /api/articles/{slug}` はログイン不要です。エラーは `{ "error": { "code": "not_found", "message": "…" } }` の形式です。記事は公開状態・発行済みの号・本人のオプトアウトを D1 で検証します。匿名タレコミの送り主や本文、内部の種IDなどは公開APIに含めません。
 
-Server Component は D1 を直接読み、React のリクエスト内キャッシュを共有します。根拠の数字の要約は `unstable_cache` で60秒キャッシュします。本文・状態・根拠投稿の作者のオプトアウトは都度確認します。公開状態の変更を即座に反映するため、紙面全体を固定HTMLとして配信するキャッシュは使用していません。後続の発行・訂正・取り下げ・非公開・オプトアウト処理では `invalidatePublicCache()` を呼んで持続キャッシュも即時破棄してください。
+Server Component は D1 を直接読み、React のリクエスト内キャッシュを共有します。根拠の数字の要約は `unstable_cache` で60秒キャッシュします。本文・状態・根拠投稿の作者のオプトアウトは都度確認します。公開状態の変更を即座に反映するため、紙面全体を固定HTMLとして配信するキャッシュは使用していません。発行・訂正・取り下げ・非公開・復元・オプトアウト処理は `invalidatePublicCache()` で持続キャッシュも即時破棄します。
 
-記事画像は `html-to-image` でブラウザ内で生成します。画像には題字・見出し・本文冒頭・記者コメントを含み、1080×1350ピクセルのPNGになります。Noto Serif JP は `next/font` でビルド時に取得されるため、初回ビルドにはフォント配信元へのネットワーク接続が必要です。`public/ryanryan.svg` は差し替え可能な仮の良良記者です。
+記事画像は `html-to-image` でブラウザ内で生成します。画像には題字・見出し・本文冒頭・記者コメントを含み、1080×1350ピクセルのPNGになります。BIZ UDPMincho Bold と BIZ UDPGothic は `next/font` でビルド時に取得されるため、初回ビルドにはフォント配信元へのネットワーク接続が必要です。`public/ryanryan.svg` は承認済みデザインのパンダの顔です。
 
 ## 検証
 
@@ -153,3 +153,41 @@ $env:WRANGLER_SEND_METRICS='false'
 6. `pnpm preview` でローカル Worker を確認してから、公開の承認を得て `pnpm deploy` を実行する。
 
 `pnpm build` は Next.js ビルド、`pnpm build:worker` は OpenNext のデプロイ成果物の作成です。OpenNext のビルドがWindowsに対応しない場合は WSL/Linux で同じロックファイルを使用してください。
+
+
+## 局員と編集部
+
+`/me` で自分の記事の取り下げ、送ったタレコミの確認・受付中の取消、GitHub の紐付け、オプトアウト・解除ができます。`/tips/new` は在籍中・対象内の自分以外の局員を検索して選び、本文1000字・リンク3件までで送信します。匿名の送り主は編集部だけが確認でき、1日（JST）20件を超えると429になります。
+
+編集部は `/editor` から `/editor/tips`、`/editor/articles`、`/editor/issues`、`/editor/members`、`/editor/imports` へ進みます。タレコミを採用すると K-12 の種と根拠が作られ、対象月の `pnpm drafts 2026-11` で下書きになります。編集保存時に表現チェックし、警告が残る記事を掲載決定する場合は確認が必要です。号を作成して記事を選び、号の編集で並び順・トップ・編集後記を保存してプレビュー・発行します。公開中の記事は訂正・非公開・復元ができ、本人が取り下げた記事は復元できません。設計にない状態遷移は409です。
+
+発行すると `/editor/issues/{id}/notices` に本人宛ての DM 文面が作られます。コピーして Slack で手動送信し、「送信済」にしてください。アプリ自身は Slack へ送信しません。作り直し依頼は `regeneration_requests` に積み、`pnpm drafts:regenerate` で処理します。名簿の GitHub・参加日（手動）・在籍・編集部を編集できます。取り込み・集計画面は月別の状況と既存スクリプトの正確なコマンドを案内します。
+
+オプトアウトは確認後、本人の記事・種・根拠・集計・宛先/送り主のタレコミ・通知・再生成依頼・セッション・記事画像と、R2 raw 内の本人の投稿・リアクション・GitHub 活動を削除し、他人の記事から本人作成の根拠も外します。再取り込み防止に必要な名簿の最小行を保持します。再ログインして解除できますが、削除したデータは戻りません。
+
+## Slack アプリの設定
+
+Slack アプリの **Sign in with Slack / OpenID Connect** を設定し、Redirect URL を **`https://<公開ホスト>/api/auth/slack/callback`** に登録します。ローカルで Slack 認証する場合も Slack が許可する HTTPS URL を使用し、`APP_BASE_URL` と登録先を一致させてください。要求スコープは **`openid profile email`** です。Bot のチャット権限はログインには不要です。
+
+| 変数 | 用途 |
+| --- | --- |
+| `SLACK_CLIENT_ID` | Slack アプリの Client ID |
+| `SLACK_CLIENT_SECRET` | Slack アプリの Client Secret（秘密） |
+| `SLACK_TEAM_ID` | ログインを許可するワークスペースの ID |
+| `APP_BASE_URL` | 末尾スラッシュなしの公開オリジン。callback と通知の記事URLに使用 |
+| `SESSION_SECRET` | state/nonce とセッションの署名用、32文字以上 |
+
+Next.js ローカル開発では `.env.local`、Worker では環境変数・secret bindings に設定します。開発ログインは従来どおり `DEV_LOGIN=1`・`APP_ENV=local`・開発ビルドだけで使えます。Slack 認証の単体テストは fetch・token 応答・JWKS をモックし、実 Slack に接続しません。
+
+## Task 07 の通し検証
+
+```powershell
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm smoke:dev
+```
+
+`smoke:dev` はローカル D1/R2 に `smoke-` 専用の架空局員・素材を準備し、ポート3117、出力先 `.next-smoke/` の独立した開発サーバーを起動・終了します。既存サーバーを停止しません。既存の発行号は変更せず、未使用の2099年度以降に架空の検証号を1つ作ります。自分が作った `smoke-` データだけを次回に再初期化します。処理ログは `.wrangler/dev-smoke.log` に残ります。Gemini キーは子プロセスから外し、`pnpm drafts 2026-11` をオフラインで実行します。
+
+局員ログイン → 記名/匿名投稿 → 取消 → 編集部ログイン → 見送り/受付復帰/採用 → 下書き生成 → 警告付き編集 → 確認付き掲載決定 → 号の作成/発行 → 非公開/復元 → 通知の送信済 → 本人取り下げ後404 → オプトアウトでDB/R2と他人の根拠も削除 → 解除 → 20件制限を検証します。`SMOKE_BASE_URL` を指定すると既存のローカル開発サーバーで同じ検証を行い、起動・終了は行いません。
