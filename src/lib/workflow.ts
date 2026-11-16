@@ -70,11 +70,15 @@ export async function workflow(path: string[], method: string, b: Row, query: UR
       check(!validated.error, validated.error?.message, 400, "validation_error", validated.error?.field);
       const target = (await all("SELECT id,opted_out_at,is_active FROM members WHERE id=?",[b.target_member_id]))[0];
       check(target, "誰のいい話かを選んでください。", 400, "validation_error", "target_member_id");
-      check(target.id !== actor.id && !target.opted_out_at && target.is_active, "その局員にはタレコミを送れません。", 400, "validation_error", "target_member_id");
+      check(target.id !== actor.id && !target.opted_out_at && target.is_active, "誰のいい話かを選んでください。", 400, "validation_error", "target_member_id");
       b.links = validated.links;
       const tipId=id();
-      await run("INSERT INTO tips (id,target_member_id,sender_member_id,is_anonymous,body,links,status,created_at) SELECT ?,?,?,?,?,?,'received',? WHERE (SELECT COUNT(*) FROM tips WHERE sender_member_id=? AND date(created_at,'+9 hours')=date(?,'+9 hours'))<20",[tipId,b.target_member_id,actor.id,Number(b.is_anonymous),b.body.trim(),JSON.stringify(b.links),now,actor.id,now]);
-      check((await all("SELECT id FROM tips WHERE id=?",[tipId])).length,"1日20件までです。",429,"rate_limited"); return {id:tipId};
+      await run("INSERT INTO tips (id,target_member_id,sender_member_id,is_anonymous,body,links,status,created_at) SELECT ?,?,?,?,?,?,'received',? WHERE EXISTS(SELECT 1 FROM members WHERE id=? AND opted_out_at IS NULL AND is_active=1 AND id<>?) AND (SELECT COUNT(*) FROM tips WHERE sender_member_id=? AND date(created_at,'+9 hours')=date(?,'+9 hours'))<20",[tipId,b.target_member_id,actor.id,Number(b.is_anonymous),b.body.trim(),JSON.stringify(b.links),now,b.target_member_id,actor.id,actor.id,now]);
+      if (!(await all("SELECT id FROM tips WHERE id=?",[tipId])).length) {
+        check((await all("SELECT id FROM members WHERE id=? AND opted_out_at IS NULL AND is_active=1 AND id<>?",[b.target_member_id,actor.id])).length,"誰のいい話かを選んでください。",400,"validation_error","target_member_id");
+        check(false,"1日20件までです。",429,"rate_limited");
+      }
+      return {id:tipId};
     }
     const t=await one("SELECT * FROM tips WHERE id=?",[key]);
     if (!editor) check(t.sender_member_id===actor.id && action==="withdraw","操作できません。",403,"forbidden");

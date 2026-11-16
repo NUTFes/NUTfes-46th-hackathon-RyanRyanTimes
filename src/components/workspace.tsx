@@ -1,10 +1,10 @@
 "use client";
 import Link from "next/link";
 import {useSearchParams} from "next/navigation";
-import {useEffect,useState,type FormEvent} from "react";
+import {useEffect,useRef,useState,type FormEvent} from "react";
 import type {Row} from "@/lib/workflow";
 import {validateTip, type TipFeedback, type TipField} from "@/lib/tip-validation";
-class RequestError extends Error { constructor(message:string, public field?:TipField) { super(message); } }
+import {request, RequestError} from "@/lib/workspace-request";
 const labels:Record<string,string>={received:"受付",adopted:"採用",declined:"見送り",withdrawn:"取り消し",draft:"下書き",selected:"掲載決定",unselected:"不掲載",published:"公開",retracted:"取り下げ",hidden:"非公開",editing:"編集中"};
 import {stamps} from "@/lib/stamps";
 function form(e:FormEvent<HTMLFormElement>) {e.preventDefault();return Object.fromEntries(new FormData(e.currentTarget));}
@@ -12,26 +12,28 @@ export function Workspace({path}:{path:string[]}) {
  const params=useSearchParams();
  const editor=path[0]==="editor"; const section=editor?(path[1]??"summary"):path[0]; const id=editor?path[2]:undefined; const notices=path[3]==="notices";
  const [data,setData]=useState<any>(null),[issues,setIssues]=useState<Row[]>([]),[filter,setFilter]=useState(params.get("status")??""),[month,setMonth]=useState(params.get("month")??""),[kind,setKind]=useState(""),[busy,setBusy]=useState(false);
+ const [loadError,setLoadError]=useState(""),[loading,setLoading]=useState(false);
  const [toast,setToast]=useState<{message:string;kind:"error"|"success"}|null>(null);
  const setError=(message:string)=>setToast(message?{message,kind:"error"}:null);
  const setMessage=(message:string)=>setToast(message?{message,kind:"success"}:null);
  const endpoint=editor?`/api/editor/${section}${id?`/${id}`:""}${notices?"/notices":""}`:section==="me"?"/api/me":"/api/members/tip-targets";
- async function request(url:string,method="GET",body?:Row) {const res=await fetch(url,{method,headers:method==="GET"?{}:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined}); const value:any=await res.json();if(!res.ok) throw new RequestError(value.error?.message??"処理に失敗しました。",value.error?.field); return value;}
- async function load() {try {const q=new URLSearchParams();if(filter) q.set("status",filter);if(month)q.set("month",month);setData(await request(`${endpoint}?${q}`));if(editor && ["articles","summary"].includes(section))setIssues(await request("/api/editor/issues"));}catch(e){setError(String(e instanceof Error?e.message:e));}}
+ async function load() {setLoading(true);try {const q=new URLSearchParams();if(filter) q.set("status",filter);if(month)q.set("month",month);const next=await request(`${endpoint}?${q}`);if(editor && ["articles","summary"].includes(section))setIssues(await request("/api/editor/issues"));setData(next);setLoadError("");}catch(e){setLoadError(e instanceof Error?e.message:String(e));}finally{setLoading(false);}}
  useEffect(()=>{void load();},[endpoint,filter,month]);
- async function act(url:string,body:Row={},method="POST",confirmation?:string) {if(confirmation&&!window.confirm(confirmation))return;setBusy(true);setError("");setMessage("");try{const result=await request(url,method,body);setMessage(result.lint_warnings?.length?`保存しました。警告：${result.lint_warnings.join("、")}`:"保存しました。");await load();return result;}catch(e){setError(e instanceof Error?e.message:String(e));}finally{setBusy(false);}}
+ async function act(url:string,body:Row={},method="POST",confirmation?:string) {if(confirmation&&!window.confirm(confirmation))return;setBusy(true);setError("");setMessage("");try{const result=await request(url,method,body);if(result.lint_warnings)setData((current:Row)=>({...current,lint_warnings:result.lint_warnings}));setMessage("保存しました。");await load();return result;}catch(e){setError(e instanceof Error?e.message:String(e));}finally{setBusy(false);}}
  const button=(text:string,url:string,body:Row={},confirmation?:string)=><button disabled={busy} type="button" className="button" onClick={()=>void act(url,body,"POST",confirmation)}>{text}</button>;
  const status=(s:string)=><span className="stamp">{labels[s]??s}</span>;
- if(!data)return <><p role="status">読み込み中…</p><Toast notice={toast}/></>;
+ const loadAlert=loadError&&<div className="alert" role="alert"><p>{loadError}</p><button type="button" className="button" disabled={loading} onClick={()=>void load()}>再読み込み</button></div>;
+ if(!data)return loadAlert||<p role="status">読み込み中…</p>;
  return <>
  <nav className="workspace-nav"><Link href="/me">マイページ</Link><Link href="/tips/new">タレコミする</Link>{editor&&[["","編集部"],["tips","タレコミ"],["articles","候補・下書き"],["issues","号"],["members","名簿"],["imports","取り込み・集計"]].map(([p,t])=><Link key={p} href={`/editor${p?`/${p}`:""}`}>{t}</Link>)}<form method="post" action="/api/auth/logout"><button>ログアウト</button></form></nav>
+ {loadAlert}
  <Toast notice={toast}/>
  {section==="me"&&<><h1>{data.member.display_name||"マイページ"}</h1>{data.member.is_editor&&<Link className="button" href="/editor">編集室を開く →</Link>}<div className="panel"><h2>自分の記事</h2>{!data.articles.length&&<p>公開中の記事はありません。</p>}{data.articles.map((a:Row)=><div className="row" key={a.id}><div><Link href={`/articles/${a.slug}`}>{a.headline}</Link><p className="muted"><Link href={`/issues/${a.issue_kind}/${a.issue_target}`}>{a.issue_title}</Link></p></div>{button("取り下げる",`/api/me/articles/${a.slug}/retract`,{confirm:true},"取り下げると元に戻せません")}</div>)}</div><div className="panel"><h2>送ったタレコミ</h2>{!data.tips.length&&<p>送ったタレコミはありません。</p>}{data.tips.map((t:Row)=><article key={t.id}><h3>{t.display_name}さんへ {status(t.status)}</h3><p>{t.body}</p><small>{new Date(t.created_at).toLocaleDateString("ja-JP")}{t.is_anonymous?" ／ 匿名":" ／ 記名"}</small>{t.status==="received"&&button("取り消す",`/api/tips/${t.id}/withdraw`)}</article>)}</div><form className="panel" onSubmit={e=>{const b=form(e);void act("/api/me",{github_login:b.github_login},"PATCH");}}><h2>GitHub アカウント</h2><label>ユーザー名<input name="github_login" defaultValue={data.member.github_login??""} maxLength={39}/></label><button className="button" disabled={busy}>保存</button></form><div className="panel"><h2>記事にしないで</h2><p>{data.member.opted_out_at?"現在、記事の対象から外れています。解除しても削除したデータは戻りません。":"オンにすると、過去の記事を含めてあなたのデータをすべて削除します。"}</p><button className="button" role="switch" aria-checked={!!data.member.opted_out_at} disabled={busy} onClick={async()=>{const out=!data.member.opted_out_at;const result=await act(`/api/me/${out?"opt-out":"opt-in"}`,{confirm:true},"POST",out?"過去の記事を含めて、あなたのデータをすべて削除します。元に戻せません":undefined);if(out&&result)window.location.href="/login?return_to=/me";}}>{data.member.opted_out_at?"記事の対象に戻る":"記事にしないで：オフ"}</button></div></>}
  {!editor&&section==="tips"&&<TipForm targets={data} request={request}/>}
  {editor&&section==="summary"&&<><h1>良良編集室</h1><div className="stats"><div className="panel"><strong>{data.received}</strong> 未処理のタレコミ</div><div className="panel"><strong>{data.draft_count}</strong> 下書き</div></div>{data.warnings.map((s:string)=><p className="alert" key={s}>{s}</p>)}<h2>号の状況</h2>{data.issues.map((i:Row)=><p key={i.id}><Link href={`/editor/issues/${i.id}`}>{i.title}</Link> {status(i.status)}</p>)}</>}
  {editor&&section==="tips"&&<><h1>届いたいい話</h1><label>状態<select value={filter} onChange={e=>setFilter(e.target.value)}><option value="">すべて</option>{["received","adopted","declined","withdrawn"].map(s=><option key={s} value={s}>{labels[s]}</option>)}</select></label>{data.map((t:Row)=><article className="panel" key={t.id}><h2>{t.target_name}さんへ {status(t.status)}</h2><p>{t.body}</p><p>送り主：{t.is_anonymous?"匿名：":""}{t.sender_name} ／ {new Date(t.created_at).toLocaleDateString("ja-JP")}</p>{t.links.map((u:string)=><p key={u}><a href={u} target="_blank" rel="noreferrer">{u}</a></p>)}<div className="actions">{t.status==="received"&&<>{button("採用",`/api/editor/tips/${t.id}/adopt`)}{button("見送り",`/api/editor/tips/${t.id}/decline`)}</>}{t.status==="declined"&&button("受付に戻す",`/api/editor/tips/${t.id}/reopen`)}</div>{t.status==="adopted"&&<p>下書き作成：<code>pnpm drafts {t.created_at.slice(0,7)}</code></p>}</article>)}</>}
  {editor&&section==="articles"&&!id&&<><h1>候補・下書き</h1><div className="filters"><label>対象月<input type="month" value={month} onChange={e=>setMonth(e.target.value)}/></label><label>状態<select value={filter} onChange={e=>setFilter(e.target.value)}><option value="">すべて</option>{Object.entries(labels).slice(4,11).map(([s,l])=><option key={s} value={s}>{l}</option>)}</select></label><label>種<select value={kind} onChange={e=>setKind(e.target.value)}><option value="">すべて</option>{Object.entries(stamps).map(([k,s])=><option value={k} key={k}>{k} {s}</option>)}</select></label></div>{data.filter((a:Row)=>!kind||a.kind===kind).map((a:Row)=><article className="panel" key={a.id}><span className="stamp">{stamps[a.kind]??a.kind}</span> {status(a.status)}<h2><Link href={`/editor/articles/${a.id}`}>{a.headline}</Link></h2><p>{a.display_name} ／ 警告 {a.lint_warnings.length}件 {a.recently_unpublished?"／ 最近載っていない人":""}</p></article>)}<SeedList month={month}/></>}
- {editor&&section==="articles"&&id&&<><h1>記事の編集 {status(data.status)}</h1><div className="editor-columns"><div><form key={`${data.id}-${data.updated_at}`} className="panel" onSubmit={e=>void act(endpoint,form(e),"PATCH")}><label>見出し<input name="headline" defaultValue={data.headline} required/></label><label>本文<textarea name="body" defaultValue={data.body} rows={12} required/></label><label>良良の記者コメント<textarea name="reporter_comment" defaultValue={data.reporter_comment} rows={4} required/></label>{data.lint_warnings.map((s:string)=><p className="alert" key={s}>{s}</p>)}{["draft","published"].includes(data.status)&&<button className="button" disabled={busy}>保存・表現チェック</button>}</form><div className="panel actions">{data.status==="draft"&&<><form onSubmit={e=>{const b=form(e);void act(`${endpoint}/select`,{issue_id:b.issue_id,confirm_warnings:true},"POST",data.lint_warnings.length?`警告が${data.lint_warnings.length}件残っています。内容を確認して掲載決定しますか？`:undefined);}}><label>掲載する号<select name="issue_id" required><option value="">号を選ぶ</option>{issues.filter(i=>i.status==="editing").map(i=><option value={i.id} key={i.id}>{i.title}</option>)}</select></label><button className="button" disabled={busy}>掲載決定</button><Link href="/editor/issues">号を作る</Link></form>{button("不掲載",`${endpoint}/unselect`)}<form onSubmit={e=>void act(`${endpoint}/regenerate`,form(e))}><label>作り直しの注文<textarea name="note" maxLength={1000}/></label><button className="button" disabled={busy}>作り直す</button><p><code>pnpm drafts:regenerate</code> で依頼を処理します。</p></form></>}{["selected","unselected"].includes(data.status)&&button("下書きに戻す",`${endpoint}/to-draft`)}{data.status==="published"&&button("非公開にする",`${endpoint}/hide`,{},"この記事を非公開にしますか？")}{data.status==="hidden"&&button("公開に戻す",`${endpoint}/restore`)}</div></div><aside className="panel"><h2>根拠を確かめる</h2>{data.seeds.map((s:Row)=><div key={s.id}><span className="stamp">{stamps[s.kind]??s.kind}</span><p>{s.summary}</p><pre>{JSON.stringify(s.metrics,null,2)}</pre></div>)}{data.evidences.map((ev:Row)=><blockquote key={ev.id}><p>{ev.excerpt}</p>{ev.url&&<a href={ev.url} target="_blank" rel="noreferrer">元の投稿を開く ↗</a>}</blockquote>)}{data.tips.map((t:Row)=><p key={t.id}>タレコミ：{t.body}</p>)}</aside></div></>}
+ {editor&&section==="articles"&&id&&<><h1>記事の編集 {status(data.status)}</h1><div className="editor-columns"><div><form key={`${data.id}-${data.updated_at}`} className="panel" onSubmit={e=>void act(endpoint,form(e),"PATCH")}><label>見出し<input name="headline" defaultValue={data.headline} required/></label><label>本文<textarea name="body" defaultValue={data.body} rows={12} required/></label><label>良良の記者コメント<textarea name="reporter_comment" defaultValue={data.reporter_comment} rows={4} required/></label>{data.lint_warnings.length>0&&<div role="alert" aria-label="表現チェックの警告">{data.lint_warnings.map((s:string)=><p className="alert" key={s}>{s}</p>)}</div>}{["draft","published"].includes(data.status)&&<button className="button" disabled={busy}>保存・表現チェック</button>}</form><div className="panel actions">{data.status==="draft"&&<><form onSubmit={e=>{const b=form(e);void act(`${endpoint}/select`,{issue_id:b.issue_id,confirm_warnings:true},"POST",data.lint_warnings.length?`警告が${data.lint_warnings.length}件残っています。内容を確認して掲載決定しますか？`:undefined);}}><label>掲載する号<select name="issue_id" required><option value="">号を選ぶ</option>{issues.filter(i=>i.status==="editing").map(i=><option value={i.id} key={i.id}>{i.title}</option>)}</select></label><button className="button" disabled={busy}>掲載決定</button><Link href="/editor/issues">号を作る</Link></form>{button("不掲載",`${endpoint}/unselect`)}<form onSubmit={e=>void act(`${endpoint}/regenerate`,form(e))}><label>作り直しの注文<textarea name="note" maxLength={1000}/></label><button className="button" disabled={busy}>作り直す</button><p><code>pnpm drafts:regenerate</code> で依頼を処理します。</p></form></>}{["selected","unselected"].includes(data.status)&&button("下書きに戻す",`${endpoint}/to-draft`)}{data.status==="published"&&button("非公開にする",`${endpoint}/hide`,{},"この記事を非公開にしますか？")}{data.status==="hidden"&&button("公開に戻す",`${endpoint}/restore`)}</div></div><aside className="panel"><h2>根拠を確かめる</h2>{data.seeds.map((s:Row)=><div key={s.id}><span className="stamp">{stamps[s.kind]??s.kind}</span><p>{s.summary}</p><pre>{JSON.stringify(s.metrics,null,2)}</pre></div>)}{data.evidences.map((ev:Row)=><blockquote key={ev.id}><p>{ev.excerpt}</p>{ev.url&&<a href={ev.url} target="_blank" rel="noreferrer">元の投稿を開く ↗</a>}</blockquote>)}{data.tips.map((t:Row)=><p key={t.id}>タレコミ：{t.body}</p>)}</aside></div></>}
  {editor&&section==="issues"&&!id&&<><h1>号を組む</h1><form className="panel" onSubmit={async e=>{const result=await act(endpoint,form(e));if(result?.id)window.location.href=`/editor/issues/${result.id}`;}}><label>種類<select name="kind"><option value="monthly">月刊</option><option value="annual">年間特大号</option></select></label><label>対象月・年度<input name="target" placeholder="2026-11 / 2026" required/></label><button className="button" disabled={busy}>号を作る</button></form>{data.map((i:Row)=><article className="panel" key={i.id}><h2><Link href={`/editor/issues/${i.id}`}>{i.title}</Link></h2>{status(i.status)} <Link href={`/editor/issues/${i.id}/notices`}>掲載通知</Link></article>)}</>}
  {editor&&section==="issues"&&id&&!notices&&<IssueEditor data={data} endpoint={endpoint} act={act} busy={busy}/>}
  {notices&&<><h1>掲載通知</h1><p>文面をコピーして本人へ DM を送り、送信済にしてください。</p>{data.map((n:Row)=><article className="panel" key={n.id}><h2>{n.display_name}さん</h2><p>{n.message}</p><div className="actions"><button className="button" onClick={async()=>{try{await navigator.clipboard.writeText(n.message);setMessage("コピーしました。");}catch{setError("コピーできませんでした。文面を選択してコピーしてください。");}}}>コピー</button><a className="button" href={n.dm_url}>Slack の DM を開く</a>{n.sent_at?<span>送信済</span>:button("送信済にする",`/api/editor/notices/${n.id}/mark-sent`)}</div></article>)}</>}
@@ -40,36 +42,47 @@ export function Workspace({path}:{path:string[]}) {
  </>;
 }
 function Toast({notice}:{notice:{message:string;kind:"error"|"success"}|null}) {
- const [visible,setVisible]=useState(false);
- useEffect(()=>{setVisible(!!notice);if(!notice)return;const timer=setTimeout(()=>setVisible(false),4000);return()=>clearTimeout(timer);},[notice]);
- return <div className="workspace-toast-region" role="status" aria-live="polite" aria-atomic="true">{visible&&notice&&<div className="workspace-toast" data-kind={notice.kind}>{notice.message}</div>}</div>;
+ const [visible,setVisible]=useState(false),[hovered,setHovered]=useState(false),[focused,setFocused]=useState(false);
+ const remaining=useRef(4000);
+ const timedNotice=useRef(notice);
+ useEffect(()=>{setVisible(!!notice);},[notice]);
+ useEffect(()=>{
+   if(timedNotice.current!==notice){remaining.current=4000;timedNotice.current=notice;}
+   if(!notice||notice.kind==="error"||!visible||hovered||focused)return;
+   const started=Date.now();
+   const timer=setTimeout(()=>setVisible(false),remaining.current);
+   return()=>{clearTimeout(timer);remaining.current=Math.max(0,remaining.current-(Date.now()-started));};
+ },[notice,visible,hovered,focused]);
+ return <div className="workspace-toast-region" onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)} onFocus={()=>setFocused(true)} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget))setFocused(false);}}>{visible&&notice&&<div className="workspace-toast" data-kind={notice.kind} role={notice.kind==="error"?"alert":"status"} aria-atomic="true"><span aria-hidden="true">{notice.kind==="error"?"⚠":"✓"}</span><span>{notice.message}</span><button type="button" aria-label="通知を閉じる" onClick={()=>setVisible(false)}>×</button></div>}</div>;
 }
 function TipForm({targets,request}:{targets:Row[];request:(u:string,m?:string,b?:Row)=>Promise<any>}) {
  const [q,setQ]=useState(""),[busy,setBusy]=useState(false),[links,setLinks]=useState(""),[error,setError]=useState<TipFeedback>();
+ const [errorCount,setErrorCount]=useState(0);
+ const submitting=useRef(false);
  const fieldProps=(field:TipField)=>({"aria-invalid":error?.field===field||undefined,"aria-describedby":error?.field===field?`tip-${field}-error`:undefined});
  const fieldMessage=(field:TipField)=>error?.field===field&&<p className="field-error" id={`tip-${field}-error`}>{error.message}</p>;
  function showError(feedback:TipFeedback, element:HTMLFormElement) {
-   setError(feedback);
+   setError(feedback);setErrorCount(count=>count+1);
    const field=feedback.field?element.elements.namedItem(feedback.field):null;
    if(field instanceof HTMLElement)field.focus();
  }
  return <><h1>あなたのまわりのいい話を教えて</h1><form className="panel" noValidate onSubmit={async e=>{
+   e.preventDefault();if(submitting.current)return;
    const element=e.currentTarget;const b=form(e);
    const payload={target_member_id:b.target_member_id,body:b.body,links:links.split(/\r?\n/),is_anonymous:b.is_anonymous==="on"};
    const validated=validateTip(payload,targets.map(t=>t.id));
-   setLinks(validated.links.join("\n"));setError(undefined);
+   setError(undefined);
    if(validated.error){showError(validated.error,element);return;}
-   setBusy(true);
+   setLinks(validated.links.join("\n"));submitting.current=true;setBusy(true);
    try{await request("/api/tips","POST",{...payload,links:validated.links});window.location.href="/tips/done";}
-   catch(err){showError({message:err instanceof Error?err.message:String(err),field:err instanceof RequestError?err.field:undefined},element);}
-   finally{setBusy(false);}
+   catch(err){showError({message:err instanceof Error?err.message:String(err),field:err instanceof RequestError?err.field:undefined},element);submitting.current=false;setBusy(false);}
  }}>
  <label>名前で検索<input type="search" value={q} onChange={e=>setQ(e.target.value)}/></label>
  <label>誰のいい話？<select name="target_member_id" required {...fieldProps("target_member_id")}><option value="">局員を選ぶ</option>{targets.filter(t=>t.display_name.includes(q)).map(t=><option value={t.id} key={t.id}>{t.display_name}</option>)}</select></label>{fieldMessage("target_member_id")}
  <label>何が良かった？（1000字まで）<textarea name="body" rows={7} required {...fieldProps("body")}/></label>{fieldMessage("body")}
  <label>関連リンク（任意・3件まで、1行に1件）<textarea name="links" rows={3} value={links} onChange={e=>setLinks(e.target.value)} {...fieldProps("links")}/></label>{fieldMessage("links")}
  <label><input type="checkbox" name="is_anonymous"/> 匿名で送る</label><p className="muted">紙面にも本人にも名前は出ません。編集部には分かります</p>
- {error&&<p className="alert" role="alert">{error.message}</p>}
+ {error&&!error.field&&<p key={errorCount} className="alert" role="alert">{error.message}</p>}
  <button className="button" disabled={busy}>いい話を届ける →</button></form></>;
 }
 function SeedList({month}:{month:string}){const [seeds,setSeeds]=useState<Row[]>([]);useEffect(()=>{fetch(`/api/editor/seeds?month=${encodeURIComponent(month)}`).then(r=>r.json()).then(v=>setSeeds(Array.isArray(v)?v:[]));},[month]);return <div className="panel"><h2>頑張りの種</h2>{seeds.map(s=><p key={s.id}><span className="stamp">{stamps[s.kind]??s.kind}</span> {s.display_name}：{s.summary} ／ {s.score}点</p>)}</div>;}
