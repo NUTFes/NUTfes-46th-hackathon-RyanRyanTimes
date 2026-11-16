@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ryanryan-times",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "d1_databases": [{
+    "binding": "DB", "database_name": "times-local",
+    "database_id": "00000000-0000-0000-0000-000000000000",
+    "migrations_dir": "drizzle"
+  }],
+  "r2_buckets": [{ "binding": "RAW", "bucket_name": "times-raw-placeholder" }],
+  "vars": { "DEV_LOGIN": "0", "APP_ENV": "production" }
+}

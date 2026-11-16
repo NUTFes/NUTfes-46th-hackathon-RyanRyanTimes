@@ -1,0 +1,3 @@
+DEV_LOGIN=0
+APP_ENV=local
+SESSION_SECRET=local-example-change-this-to-at-least-32-characters
