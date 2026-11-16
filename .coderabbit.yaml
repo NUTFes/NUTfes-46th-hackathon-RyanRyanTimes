@@ -1,0 +1,28 @@
+# CodeRabbit の設定（https://docs.coderabbit.ai/reference/configuration）
+language: ja-JP
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+    # 作業ブランチ → develop、develop → main のどちらの PR もレビューする
+    base_branches:
+      - develop
+      - main
+  path_filters:
+    - "!pnpm-lock.yaml"
+    - "!drizzle/meta/**"
+  path_instructions:
+    - path: "src/**"
+      instructions: |
+        個人情報・認証・権限の確認漏れ、状態遷移の抜け、Cloudflare Workers の無料プランの CPU 制限（1リクエスト 10ms）に触れる重い処理がないかを重点的に見てください。
+    - path: "docs/**"
+      instructions: |
+        設計書です。実装との食い違いがあれば指摘してください。
+chat:
+  auto_reply: true
