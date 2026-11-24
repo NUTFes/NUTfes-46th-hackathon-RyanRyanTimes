@@ -210,3 +210,9 @@ pnpm exec wrangler d1 execute <db> --remote --file demo/seed.sql
 pnpm exec wrangler d1 migrations apply times-local --local --persist-to .wrangler/demo-check
 pnpm exec wrangler d1 execute times-local --local --persist-to .wrangler/demo-check --file demo/seed.sql
 ```
+
+## デモ用ログインの注意
+
+- `DEMO_PASSCODE` は、本番とは別のデモ専用の Worker・D1 にだけ設定する。Slack ログインの設定（`SLACK_*`）がある環境には入れない（架空の責任者・編集部が、本物のユーザーに権限を付けられてしまうため）
+- パスコードはランダムな文字列にする（例：`openssl rand -base64 24`）
+- 本番に移るときは `DEMO_PASSCODE` を削除し、`FAKE_` で始まる架空データを D1 から消す

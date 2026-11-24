@@ -1,7 +1,8 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 
 const windowMs = 10 * 60 * 1000;
-const limit = 10;
+// 大学の共有 IP で他の人を巻き込みにくいよう、上限は緩めにする
+const limit = 30;
 const digest = (value: string) => createHash("sha256").update(value).digest();
 
 export function demoPasscode(env: Pick<CloudflareEnv, "DEMO_PASSCODE">) {
@@ -12,12 +13,12 @@ export function demoPasscode(env: Pick<CloudflareEnv, "DEMO_PASSCODE">) {
 export async function checkDemoPasscode(db: D1Database, request: Request, expected: string, input: unknown) {
   const now = Date.now();
   const ip = request.headers.get("CF-Connecting-IP") ?? "local";
-  if (typeof input === "string" && timingSafeEqual(digest(expected), digest(input))) {
-    const blocked = await db.prepare(
-      "SELECT 1 FROM demo_login_attempts WHERE ip = ? AND expires_at > ? AND failures >= ?",
-    ).bind(ip, now, limit).first();
-    return blocked ? 429 : 200;
-  }
+  // 先にロックアウトを確かめ、ロック中は正誤を問わず同じ処理で 429 を返す（応答時間から正誤が漏れないように）
+  const blocked = await db.prepare(
+    "SELECT 1 FROM demo_login_attempts WHERE ip = ? AND expires_at > ? AND failures >= ?",
+  ).bind(ip, now, limit).first();
+  if (blocked) return 429;
+  if (typeof input === "string" && timingSafeEqual(digest(expected), digest(input))) return 200;
 
   const [result] = await db.batch([
     db.prepare(`

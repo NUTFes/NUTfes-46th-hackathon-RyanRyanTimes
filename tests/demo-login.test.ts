@@ -77,8 +77,8 @@ it("keeps production dev login disabled when the secret is absent or too short",
 it("limits concurrent failures per IP and restores access after 10 minutes", async () => {
   const start = Date.now();
   const now = vi.spyOn(Date, "now").mockReturnValue(start);
-  const statuses = await Promise.all(Array.from({ length: 12 }, () => post("wrong")));
-  expect(statuses.filter(response => response.status === 403)).toHaveLength(10);
+  const statuses = await Promise.all(Array.from({ length: 32 }, () => post("wrong")));
+  expect(statuses.filter(response => response.status === 403)).toHaveLength(30);
   expect(statuses.filter(response => response.status === 429)).toHaveLength(2);
   expect((await post(passcode)).status).toBe(429);
   expect((await post(passcode, "192.0.2.2")).status).toBe(303);
