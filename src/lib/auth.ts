@@ -5,11 +5,13 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { members, sessions } from "@/db/schema";
 import { canUseDevLogin, roleStatus, safeReturnTo, SESSION_COOKIE, sessionIsValid, verifySession } from "./session";
+import { demoPasscode } from "./demo-login";
 import { apiError } from "./errors";
 
 export async function authEnvironment() {
   const { env } = await getCloudflareContext({ async: true });
   return {
+    demoMode: Boolean(demoPasscode(env)),
     secret: env.SESSION_SECRET ?? process.env.SESSION_SECRET ?? "",
     devLogin: canUseDevLogin(process.env.NODE_ENV, process.env.APP_ENV ?? env.APP_ENV, process.env.DEV_LOGIN ?? env.DEV_LOGIN),
   };

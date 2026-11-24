@@ -15,6 +15,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply times-local --local",
     "db:seed": "tsx scripts/seed.ts",
+    "demo:seed-sql": "tsx scripts/seed.ts --demo-sql",
     "import:slack": "tsx scripts/pipeline.ts import:slack",
     "import:github": "tsx scripts/pipeline.ts import:github",
     "members:sync": "tsx scripts/pipeline.ts members:sync",

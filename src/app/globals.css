@@ -25,3 +25,6 @@ body{background:var(--paper-deep);font-family:var(--font-sans)}h1,h2,h3,.namepla
 .workspace-toast[data-kind="success"]{background:var(--paper);border-color:var(--ink)}
 .workspace-toast button{flex-shrink:0;min-width:32px;min-height:32px;border:1px solid currentColor;border-radius:6px;background:var(--panda-white);cursor:pointer}
 .workspace-toast button:focus-visible{outline:3px solid var(--yellow-dark);outline-offset:2px}
+
+.demo-badge{display:inline-block;padding:.1em .55em;border:1px solid currentColor;border-radius:4px;font-size:.75rem;font-weight:700}
+.demo-login{margin-top:1rem;padding:1rem;border:1px solid currentColor;border-radius:6px}
