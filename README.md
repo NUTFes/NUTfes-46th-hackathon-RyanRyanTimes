@@ -191,3 +191,22 @@ pnpm smoke:dev
 `smoke:dev` はローカル D1/R2 に `smoke-` 専用の架空局員・素材を準備し、ポート3117、出力先 `.next-smoke/` の独立した開発サーバーを起動・終了します。既存サーバーを停止しません。既存の発行号は変更せず、未使用の2099年度以降に架空の検証号を1つ作ります。自分が作った `smoke-` データだけを次回に再初期化します。処理ログは `.wrangler/dev-smoke.log` に残ります。Gemini キーは子プロセスから外し、`pnpm drafts 2026-11` をオフラインで実行します。
 
 局員ログイン → 記名/匿名投稿 → 取消 → 編集部ログイン → 見送り/受付復帰/採用 → 下書き生成 → 警告付き編集 → 確認付き掲載決定 → 号の作成/発行 → 非公開/復元 → 通知の送信済 → 本人取り下げ後404 → オプトアウトでDB/R2と他人の根拠も削除 → 解除 → 20件制限を検証します。`SMOKE_BASE_URL` を指定すると既存のローカル開発サーバーで同じ検証を行い、起動・終了は行いません。
+
+## デモ環境のセットアップ
+
+デモ専用の Cloudflare 環境に `SESSION_SECRET`（32文字以上）と `DEMO_PASSCODE`（16文字以上）を Worker のシークレットとして設定します。デモ用ログインでは、シードで登録した架空アカウントを選べます。パスコードの入力を同じ IP から10分間に10回誤ると、最初の失敗から10分が経過するまでログインが制限されます。
+
+以下のコマンドはアプリのディレクトリで実行します。`<db>` はデモ専用の本番 D1 データベース名に置き換えてください。SQL の生成はローカルで行われ、再適用しても既存のシード行は維持されます。
+
+```sh
+pnpm demo:seed-sql
+pnpm exec wrangler d1 migrations apply <db> --remote
+pnpm exec wrangler d1 execute <db> --remote --file demo/seed.sql
+```
+
+ローカル D1 で SQL を検証する場合は、次のコマンドを使います。
+
+```sh
+pnpm exec wrangler d1 migrations apply times-local --local --persist-to .wrangler/demo-check
+pnpm exec wrangler d1 execute times-local --local --persist-to .wrangler/demo-check --file demo/seed.sql
+```
